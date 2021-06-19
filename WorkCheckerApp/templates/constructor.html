@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Work Checher</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <div class="navbar-brand">WORK CHECKER</div>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="m-1"><a class="btn btn-light" href="{% url 'checker' %}">Проверка работы</a></li>
+                        <li class="m-1"><a class="btn btn-light" href="#">Конструктор шаблонов</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="text-center mt-5">
+
+                <h1>Конструктор шаблонов</h1>
+		
+				<div class="row p-3">
+                <div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    <h5 for="formFileLg">Размер шрифта</h5>
+                    <select class="form-select" aria-label=".form-select-lg example">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+				
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    <h5 for="formFileLg">Межстрочный интервал</h5>
+                    <select class="form-select" aria-label=".form-select-lg example">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+				</div>
+				
+				<div class="row p-3">
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    <h5 for="formFileLg">Абзацный отступ</h5>
+                    <select class="form-select" aria-label=".form-select-lg example">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+				
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    <h5 for="formFileLg">Выравнивание текста</h5>
+                    <select class="form-select" aria-label=".form-select-lg example">
+                        <option value="1">По ширине</option>
+                        <option value="2">По центру</option>
+						<option value="3">По левой стороне</option>
+                        <option value="4">По правой стороне</option>
+                    </select>
+                </div>
+				</div>
+				
+				<div class="row p-3">
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    <h5 for="formFileLg">Размеры полей</h5>
+                    <select class="form-select" aria-label=".form-select-lg example">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div></div>
+
+                <div class="d-grid gap-2 mt-4 mb-4">
+                    <button type="submit" class="btn btn-dark btn-lg">Скачать полученный шаблон</button>
+                </div>
+				
+
+            </div>
+        </div>
+    </body>
+</html>

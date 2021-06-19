@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Work Checher</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+		<script>
+			$("#customTemplate").css("display", "block");
+		
+			$(document).ready(function() {
+				$('#templateType').change(function() {
+					if($(this).val() === "4")
+					{
+						$("#customTemplate").css("display", "block");
+					}
+					else
+					{
+						$("#customTemplate").css("display", "none");
+					}
+				});
+			});
+		</script>
+		
+		<style>
+		
+		#customTemplate{
+			display: none;
+		}
+		
+		</style>
+		
+    </head>
+	
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <div class="navbar-brand">WORK CHECKER</div>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="m-1"><a class="btn btn-light" href="#">Проверка работы</a></li>
+                        <li class="m-1"><a class="btn btn-light" href="{% url 'constructor' %}">Конструктор шаблонов</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="text-center mt-5">
+
+                <h1>Проверка работы</h1>
+				
+				</br>
+				
+                <div class="border border-2 border-secondary rounded-3 p-3">
+                    <h4 for="formFileLg">Загрузить работу (.doc, .docx)</h4>
+					{% load crispy_forms_tags %}
+					<form method="post" enctype="multipart/form-data">
+						{% csrf_token %}
+						{% crispy form %}
+					</form>
+                    <!--<input class="form-control form-control-lg" id="formFileLg" type="file" accept=".doc,.docx">-->
+                </div>
+                
+                </br>
+
+                <div class="border border-2 border-secondary rounded-3 p-3">
+                    <h4 for="formFileLg">Выберите шаблон проверки</h4>
+                    <select id="templateType" class="form-select form-select-lg" aria-label=".form-select-lg example">
+                        <option value="1" selected>Отчет по курсовой работе</option>
+                        <option value="2">Отчет по производственной практике</option>
+                        <option value="3">Отчет по дипломной работе</option>
+                        <option value="4">Свой шаблон проверки</option>
+                    </select>
+
+					<div id="customTemplate">
+                    </br>
+
+                    <div class="border border-1 border-info rounded-3 p-3">
+                        <h4 for="formFileLg">Загрузить свой шаблон (.wct)</h4>
+                        <input class="form-control form-control-lg" id="formFileLg" type="file" accept=".wct">
+                    </div></div>
+                    
+                </div>
+
+                <div class="d-grid gap-2 mt-4 mb-4">
+                    <button type="submit" class="btn btn-dark btn-lg">Запустить проверку</button>
+                </div>
+
+            </div>
+        </div>
+    </body>
+	
+</html>

@@ -55,66 +55,41 @@
         <div class="container">
             <div class="text-center mt-5">
 				
-				{% load crispy_forms_tags %}
-				<form method="POST" enctype="multipart/form-data">
-					{% csrf_token %}
-					{% crispy form %}
-				</form>
-				
-				{% if form.errors %}
-					{% for field in form %}
-						{% for error in field.errors %}
-						<div class="alert alert-danger">
-							<strong>{{ error|escape }}</strong>
-						</div>
-						{% endfor %}
-					{% endfor %}
-					{% for error in form.non_field_errors %}
-						<div class="alert alert-danger">
-							<strong>{{ error|escape }}</strong>
-						</div>
-					{% endfor %}
-				{% endif %}
-				
-				<!--
-                <h1>Проверка работы</h1>
-				
+                <h1>Проверка работы</h1>			
 				</br>
-				
-				
-				
 				</br>
-				
-                <div class="border border-2 border-secondary rounded-3 p-3">
-                    <h4 for="formFileLg">Загрузить работу (.doc, .docx)</h4>
-                    <input class="form-control form-control-lg" id="formFileLg" type="file" accept=".doc,.docx">
-                </div>
-                
-                </br>
-
-                <div class="border border-2 border-secondary rounded-3 p-3">
-                    <h4 for="formFileLg">Выберите шаблон проверки</h4>
-                    <select id="templateType" class="form-select form-select-lg" aria-label=".form-select-lg example">
-                        <option value="1" selected>Отчет по курсовой работе</option>
-                        <option value="2">Отчет по производственной практике</option>
-                        <option value="3">Отчет по дипломной работе</option>
-                        <option value="4">Свой шаблон проверки</option>
-                    </select>
-
-					<div id="customTemplate">
+				<form method="POST" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="border border-2 border-secondary rounded-3 p-3">
+                        <h4 for="formFileLg">Загрузить работу (.doc, .docx)</h4>
+                        <input name="DocFile" class="form-control form-control-lg" id="formFileLg" type="file" accept=".doc,.docx">
+                    </div>
+                    
                     </br>
 
-                    <div class="border border-1 border-info rounded-3 p-3">
-                        <h4 for="formFileLg">Загрузить свой шаблон (.wct)</h4>
-                        <input class="form-control form-control-lg" id="formFileLg" type="file" accept=".wct">
-                    </div></div>
-                    
-                </div>
+                    <div class="border border-2 border-secondary rounded-3 p-3">
+                        <h4 for="formFileLg">Выберите шаблон проверки</h4>
+                        <select name="DocType" id="templateType" class="form-select form-select-lg" aria-label=".form-select-lg example">
+                            <option value="1" selected>Отчет по курсовой работе</option>
+                            <option value="2">Отчет по производственной практике</option>
+                            <option value="3">Отчет по дипломной работе</option>
+                            <option value="4">Свой шаблон проверки</option>
+                        </select>
 
-                <div class="d-grid gap-2 mt-4 mb-4">
-                    <button type="submit" class="btn btn-dark btn-lg">Запустить проверку</button>
-                </div>
-				-->
+                        <div id="customTemplate">
+                        </br>
+
+                        <div class="border border-1 border-info rounded-3 p-3">
+                            <h4 for="formFileLg">Загрузить свой шаблон (.wct)</h4>
+                            <input name="CustomTemplate" class="form-control form-control-lg" id="formFileLg" type="file" accept=".wct">
+                        </div></div>
+                        
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4 mb-4">
+                        <button type="submit" class="btn btn-dark btn-lg">Запустить проверку</button>
+                    </div>
+                </form>
 
             </div>
         </div>

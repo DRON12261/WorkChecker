@@ -23,24 +23,28 @@
         </nav>
 
         <div class="container">
+			<form method="POST" action="" enctype="multipart/form-data">
+				{% csrf_token %}
             <div class="text-center mt-5">
 
                 <h1>Конструктор шаблонов</h1>
-		
+				
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    <h5 for="formFileLg">Имя шаблона</h5>
+					<input name="TemplateName" type="text" class="form-control" value="Новый шаблон">
+                </div>
+
 				<div class="row p-3">
                 <div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
                     <h5 for="formFileLg">Размер шрифта</h5>
-                    <select class="form-select" aria-label=".form-select-lg example">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                    </select>
+					<input name="FontSize" type="number" class="form-control" min="8" max="42" value="10">
                 </div>
 				
 				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
-                    <h5 for="formFileLg">Межстрочный интервал</h5>
-                    <select class="form-select" aria-label=".form-select-lg example">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
+                    <h5 for="formFileLg">Шрифт</h5>
+                    <select name="FontName" class="form-select" aria-label=".form-select-lg example">
+                        <option value="1">Times New Roman</option>
+                        <option value="2">Consolas</option>
                     </select>
                 </div>
 				</div>
@@ -48,15 +52,12 @@
 				<div class="row p-3">
 				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
                     <h5 for="formFileLg">Абзацный отступ</h5>
-                    <select class="form-select" aria-label=".form-select-lg example">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                    </select>
+                    <input name="ParIndent" type="number" class="form-control" min="8" max="42" value="10">
                 </div>
 				
 				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
                     <h5 for="formFileLg">Выравнивание текста</h5>
-                    <select class="form-select" aria-label=".form-select-lg example">
+                    <select name="TextAlign" class="form-select" aria-label=".form-select-lg example">
                         <option value="1">По ширине</option>
                         <option value="2">По центру</option>
 						<option value="3">По левой стороне</option>
@@ -68,18 +69,170 @@
 				<div class="row p-3">
 				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
                     <h5 for="formFileLg">Размеры полей</h5>
-                    <select class="form-select" aria-label=".form-select-lg example">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                    </select>
-                </div></div>
-
-                <div class="d-grid gap-2 mt-4 mb-4">
-                    <button type="submit" class="btn btn-dark btn-lg">Скачать полученный шаблон</button>
+                    <div class="row p-3">
+						<input name="FLeft" type="number" class="col-sm form-control m-1" min="8" max="42" value="10">
+						<input name="FRight" type="number" class="col-sm form-control m-1" min="8" max="42" value="10">
+						<input name="FUp" type="number" class="col-sm form-control m-1" min="8" max="42" value="10">
+						<input name="FDown" type="number" class="col-sm form-control m-1" min="8" max="42" value="10">
+					</div>
                 </div>
 				
-
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    <h5 for="formFileLg">Межстрочный интервал</h5>
+					<div class="row p-3">
+						<input name="LineSpace" type="number" class="form-control mt-1" min="8" max="42" value="10">
+					</div>
+                </div>
+				</div>
+				
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+				<h5>Структура отчета</h5>
+				
+				<table class="table table-hover table-bordered">
+					<thead>
+						<tr class="table-dark">
+							<th scope="col">№</th>
+							<th scope="col">Описание</th>
+							<th scope="col">Обязательный/Необязательный</th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">1</th>
+							<th scope="col">Титульная страница</th>
+							<th scope="col"><input name="Struct1" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">2</th>
+							<th scope="col">Содержание</th>
+							<th scope="col"><input name="Struct2" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">3</th>
+							<th scope="col">Введение</th>
+							<th scope="col"><input name="Struct3" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">4</th>
+							<th scope="col">Основная часть (главы)</th>
+							<th scope="col"><input name="Struct4" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">5</th>
+							<th scope="col">Заключение</th>
+							<th scope="col"><input name="Struct5" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">6</th>
+							<th scope="col">Список литературы</th>
+							<th scope="col"><input name="Struct6" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">7</th>
+							<th scope="col">Словарь сокращений</th>
+							<th scope="col"><input name="Struct7" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">8</th>
+							<th scope="col">Словарь терминов</th>
+							<th scope="col"><input name="Struct8" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">9</th>
+							<th scope="col">Список иллюстрированного материала</th>
+							<th scope="col"><input name="Struct9" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">10</th>
+							<th scope="col">Приложения</th>
+							<th scope="col"><input name="Struct10" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+					</thead>
+				</table>
+				</div>
+				
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+				<h5>Пункты списка литературы</h5>
+				
+				<table class="table table-hover table-bordered">
+					<thead>
+						<tr class="table-dark">
+							<th scope="col">№</th>
+							<th scope="col">Печатное издание</th>
+							<th scope="col">Обязательный/Необязательный</th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">1</th>
+							<th scope="col">Авторы</th>
+							<th scope="col"><input name="Lit1" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">2</th>
+							<th scope="col">Название</th>
+							<th scope="col"><input name="Lit2" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">3</th>
+							<th scope="col">Издательство</th>
+							<th scope="col"><input name="Lit3" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">4</th>
+							<th scope="col">Год издания</th>
+							<th scope="col"><input name="Lit4" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">5</th>
+							<th scope="col">Номер журнала</th>
+							<th scope="col"><input name="Lit5" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">6</th>
+							<th scope="col">Страница</th>
+							<th scope="col"><input name="Lit6" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">7</th>
+							<th scope="col">Дата обращения</th>
+							<th scope="col"><input name="Lit7" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-dark">
+							<th scope="col">№</th>
+							<th scope="col">Ссылка на интернет-ресурс</th>
+							<th scope="col">Обязательный/Необязательный</th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">1</th>
+							<th scope="col">Автор</th>
+							<th scope="col"><input name="ALit1" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">2</th>
+							<th scope="col">Название</th>
+							<th scope="col"><input name="ALit2" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">3</th>
+							<th scope="col">Источник</th>
+							<th scope="col"><input name="ALit3" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">4</th>
+							<th scope="col">Ссылка на ресурс</th>
+							<th scope="col"><input name="ALit4" class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked></th>
+						</tr>
+						<tr class="table-primary">
+							<th scope="col">5</th>
+							<th scope="col">Дата обращения</th>
+							<th scope="col"><input name="ALit5" class="form-check-input" type="checkbox" value="" id="flexCheckDefault"></th>
+						</tr>
+					</thead>
+				</table>
+				</div>
+				
+				<div class="d-grid gap-2 mt-4 mb-4">
+                    <button type="submit" class="btn btn-dark btn-lg">Скачать полученный шаблон</button>
+                </div>
             </div>
+		</form>
         </div>
     </body>
 </html>

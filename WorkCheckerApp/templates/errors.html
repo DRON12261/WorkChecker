@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Work Checher by mEAT$CODe team</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <div class="navbar-brand">WORK CHECKER by mEAT$CODe team</div>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="m-1"><a class="btn btn-light" href="{% url 'checker' %}">Проверка работы</a></li>
+                        <li class="m-1"><a class="btn btn-light" href="{% url 'constructor' %}">Конструктор шаблонов</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="text-center mt-5">
+
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    
+                <h1>Найденные ошибки</h1>
+				
+				</br>
+				
+				<table class="table table-hover table-bordered">
+					<thead>
+						<tr class="table-dark">
+							<th scope="col">№</th>
+							<th scope="col">Ошибка</th>
+							<th scope="col">Описание</th>
+							<th scope="col">Страница</th>
+							<th scope="col">Строка</th>
+							<th scope="col">Предлагаемое решение</th>
+						</tr>
+						
+						{% for dcErr in ErrorList %}
+							<tr class="table-light">
+								<th scope="col">{{ dcErr.number }}</th>
+								<th scope="col">{{ dcErr.errorType }}</th>
+								<th scope="col">{{ dcErr.errorDisc }}</th>
+								<th scope="col">{{ dcErr.pageNum }}</th>
+								<th scope="col">{{ dcErr.lineNum }}</th>
+								<th scope="col">{{ dcErr.solution }}</th>
+							</tr>
+						{% endfor %}
+						
+					</thead>
+				</table>
+				
+				<div class="d-grid gap-2 mt-4 mb-4">
+                    <button type="submit" class="btn btn-dark btn-lg">Скачать документ с выделенными ошибками</button>
+                </div>
+				
+				</div>
+				
+            </div>
+        </div>
+    </body>
+</html>

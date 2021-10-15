@@ -32,6 +32,8 @@ def parse(doc_path, doc_type, wct_path):
 def checker(request):
     if 'DocName' not in request.session:
         request.session['DocName'] = ""
+    if 'HtmlName' not in request.session:
+        request.session['HtmlName'] = ""
     if 'DocType' not in request.session:
         request.session['DocType'] = 0
     if 'CustomTemplate' not in request.session:
@@ -41,11 +43,23 @@ def checker(request):
         request.session['ErrorList'] = arrayErr
 
     if request.method == "POST":
+        notDoc = False
+        notHtml = False
+        notWCT = False
         if 'DocFile' in request.FILES:
             myfile = request.FILES['DocFile']
             fs = FileSystemStorage()
             request.session['DocName'] = fs.save(myfile.name, myfile)
             print(os.path.exists(os.getcwd() + '\\media\\' + request.session['DocName']))
+        else:
+            notDoc = True
+        if 'HtmlFile' in request.FILES:
+            myfile = request.FILES['HtmlFile']
+            fs = FileSystemStorage()
+            request.session['HtmlName'] = fs.save(myfile.name, myfile)
+            print(os.path.exists(os.getcwd() + '\\media\\' + request.session['HtmlName']))
+        else:
+            notHtml = True
         if 'DocType' in request.POST:
             request.session['DocType'] = request.POST['DocType']
             print(request.session['DocType'])
@@ -54,6 +68,12 @@ def checker(request):
             fs = FileSystemStorage()
             request.session['CustomTemplate'] = fs.save(os.getcwd()+'\\media\\templates\\' + myfile.name, myfile)
             print(os.path.exists(request.session['CustomTemplate']))
+        else:
+            if request.session['DocType'] == "2":
+                notWCT = True
+        
+        if notDoc or notHtml or notWCT:
+            return render(request, 'checker.html', {'notDoc': notDoc, 'notHtml': notHtml, 'notWCT': notWCT})
 
         #------------PARSING-------------
 
@@ -104,8 +124,8 @@ def constructor(request):
         request.session['Struct2'] = True
     if 'Struct3' not in request.session:
         request.session['Struct3'] = True
-    if 'Struct4' not in request.session:
-        request.session['Struct4'] = True
+    '''if 'Struct4' not in request.session:
+        request.session['Struct4'] = True'''
     if 'Struct5' not in request.session:
         request.session['Struct5'] = True
     if 'Struct6' not in request.session:
@@ -118,7 +138,7 @@ def constructor(request):
         request.session['Struct9'] = False
     if 'Struct10' not in request.session:
         request.session['Struct10'] = False
-    if 'Lit1' not in request.session:
+    '''if 'Lit1' not in request.session:
         request.session['Lit1'] = True
     if 'Lit2' not in request.session:
         request.session['Lit2'] = True
@@ -141,7 +161,7 @@ def constructor(request):
     if 'ALit4' not in request.session:
         request.session['ALit4'] = True
     if 'ALit5' not in request.session:
-        request.session['ALit5'] = False
+        request.session['ALit5'] = False'''
 
     if request.method == 'POST':
         request.session['TemplateName'] = request.POST['TemplateName']
@@ -166,10 +186,10 @@ def constructor(request):
             request.session['Struct3'] = True
         else:
             request.session['Struct3'] = False
-        if 'Struct4' in request.POST:
+        '''if 'Struct4' in request.POST:
             request.session['Struct4'] = True
         else:
-            request.session['Struct4'] = False
+            request.session['Struct4'] = False'''
         if 'Struct5' in request.POST:
             request.session['Struct5'] = True
         else:
@@ -194,7 +214,7 @@ def constructor(request):
             request.session['Struct10'] = True
         else:
             request.session['Struct10'] = False
-        if 'Lit1' in request.POST:
+        '''if 'Lit1' in request.POST:
             request.session['Lit1'] = True
         else:
             request.session['Lit1'] = False
@@ -241,7 +261,7 @@ def constructor(request):
         if 'ALit5' in request.POST:
             request.session['ALit5'] = True
         else:
-            request.session['ALit5'] = False
+            request.session['ALit5'] = False'''
 
         WCTFile = open(os.getcwd()+'\\WCT\\'+request.session['TemplateName']+'.wct', 'w')
         WCTFile.write(request.session['TemplateName']+'\n')
@@ -254,9 +274,9 @@ def constructor(request):
         WCTFile.write(request.session['FUp']+'\n')
         WCTFile.write(request.session['FDown']+'\n')
         WCTFile.write(request.session['LineSpace']+'\n')
-        WCTFile.write(str(int(request.session['Struct1']))+str(int(request.session['Struct2']))+str(int(request.session['Struct3']))+str(int(request.session['Struct4']))+str(int(request.session['Struct5']))+str(int(request.session['Struct6']))+str(int(request.session['Struct7']))+str(int(request.session['Struct8']))+str(int(request.session['Struct9']))+str(int(request.session['Struct10']))+'\n')
-        WCTFile.write(str(int(request.session['Lit1']))+str(int(request.session['Lit2']))+str(int(request.session['Lit3']))+str(int(request.session['Lit4']))+str(int(request.session['Lit5']))+str(int(request.session['Lit6']))+str(int(request.session['Lit7']))+'\n')
-        WCTFile.write(str(int(request.session['ALit1']))+str(int(request.session['ALit2']))+str(int(request.session['ALit3']))+str(int(request.session['ALit4']))+str(int(request.session['ALit5'])))
+        WCTFile.write(str(int(request.session['Struct1']))+str(int(request.session['Struct2']))+str(int(request.session['Struct3']))+str(int(request.session['Struct5']))+str(int(request.session['Struct6']))+str(int(request.session['Struct7']))+str(int(request.session['Struct8']))+str(int(request.session['Struct9']))+str(int(request.session['Struct10']))+'\n')
+        '''WCTFile.write(str(int(request.session['Lit1']))+str(int(request.session['Lit2']))+str(int(request.session['Lit3']))+str(int(request.session['Lit4']))+str(int(request.session['Lit5']))+str(int(request.session['Lit6']))+str(int(request.session['Lit7']))+'\n')
+        WCTFile.write(str(int(request.session['ALit1']))+str(int(request.session['ALit2']))+str(int(request.session['ALit3']))+str(int(request.session['ALit4']))+str(int(request.session['ALit5'])))'''
         WCTFile.close()
 
         with open(os.getcwd()+'\\WCT\\'+request.session['TemplateName']+'.wct', 'rb') as fh:

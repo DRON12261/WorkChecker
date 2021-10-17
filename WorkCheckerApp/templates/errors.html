@@ -37,19 +37,17 @@
 							<th scope="col">№</th>
 							<th scope="col">Ошибка</th>
 							<th scope="col">Описание</th>
-							<th scope="col">Страница</th>
-							<th scope="col">Строка</th>
-							<th scope="col">Предлагаемое решение</th>
+							<th scope="col">Глава</th>
+							<th scope="col">Параграф</th>
 						</tr>
 						
 						{% for dcErr in ErrorList %}
 							<tr class="table-light">
-								<th scope="col">{{ dcErr.number }}</th>
-								<th scope="col">{{ dcErr.errorType }}</th>
-								<th scope="col">{{ dcErr.errorDisc }}</th>
-								<th scope="col">{{ dcErr.pageNum }}</th>
-								<th scope="col">{{ dcErr.lineNum }}</th>
-								<th scope="col">{{ dcErr.solution }}</th>
+								<th scope="col" style="vertical-align:top;">{{ dcErr.number }}</th>
+								<th scope="col" style="vertical-align:top;">{{ dcErr.errorType }}</th>
+								<th scope="col" style="vertical-align:top;">{{ dcErr.errorDisc }}</th>
+								<th scope="col" style="vertical-align:top;">{{ dcErr.chapter }}</th>
+								<th scope="col" style="vertical-align:top;">{{ dcErr.text }}</th>
 							</tr>
 						{% endfor %}
 						

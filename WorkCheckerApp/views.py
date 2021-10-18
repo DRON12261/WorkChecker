@@ -64,14 +64,15 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
         currentChapter = 0
 
         for tag in tags:
-            if tag.name == "h1" and re.search('\S', tag.span.text) != None:
+            isHeader = False
+            if tag.name in ["h1", "h2", "h3"] and re.search('\S', tag.text) != None:
                 #print(tag.span.text)
                 chapters.append([])
                 currentChapter += 1
                 chapters[currentChapter].append(tag)
+                isHeader = True
 
             if tag.name == "p" and re.search('\S', tag.text) != None:
-                #print(tag.span.text)
                 bold = tag.b
                 if bold != None and bold.span != None and re.search('\S', tag.span.text) != None:
                     parAtr = tag.attrs["style"]
@@ -83,88 +84,110 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                                 chapters.append([])
                                 currentChapter += 1
                                 chapters[currentChapter].append(tag)
+                                isHeader = True
+                if 'class' in tag.attrs and str(tag.attrs['class'][0]) in ["MsoNoSpacing", "MsoTocHeading"]:
+                    print("gotcha")
+                    chapters.append([])
+                    currentChapter += 1
+                    chapters[currentChapter].append(tag)
+                    isHeader = True
                 spanChild = None
                 for child in tag.children:
-                    if child.name == "span":
+                    if child.name == "span" and re.search('\S', child.text) != None:
                         spanChild = child
-                if spanChild != None:
-                    spanAtr = spanChild.attrs["style"]
-                    spanStyles = re.split(";|,", spanAtr.replace('\n', ""))
-                    for spanStyle in spanStyles:
-                        if spanStyle.find("font-family:") != -1:
-                            ff = spanStyle[spanStyle.find(':') + 1:]
-                            ff = ff.replace('\"', "")
-                            if ff != request.session['FontName']:
-                                errornum += 1
-                                request.session['ErrorList'].append(DocError(errornum, "Неподходящий шрифт", 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".', chapters[currentChapter][0].text, tag.text).serialize())
-                            #print(ff)
-                            #print(spanStyles)
-                        if spanStyle.find("font-size:") != -1:
-                            fs = spanStyle[spanStyle.find(':') + 1:]
-                            fs = fs[:fs.find('.')]
-                            if float(fs) != float(request.session['FontSize']):
-                                #print(spanChild)
-                                #print(tag)
-                                errornum += 1
-                                request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер шрифта", 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".', chapters[currentChapter][0].text, tag.text).serialize())
-                            #print(fs)
+                        if "style" in spanChild.attrs:
+                            spanAtr = spanChild.attrs["style"]
+                            spanStyles = re.split(";|,", spanAtr.replace('\n', ""))
+                            for spanStyle in spanStyles:
+                                if spanStyle.find("font-family:") != -1:
+                                    ff = spanStyle[spanStyle.find(':') + 1:]
+                                    ff = ff.replace('\"', "")
+                                    if ff != request.session['FontName'] and ff != "Symbol" and ff != "Wingdings":
+                                        if errornum != 0:
+                                            lastError = request.session['ErrorList'][errornum-1]
+                                            if lastError['errorType'] != "Неподходящий шрифт" and  lastError['errorDisc'] != 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".' and lastError['chapter'] != chapters[currentChapter][0].text and lastError['text'] != tag.text:
+                                                errornum += 1
+                                                request.session['ErrorList'].append(DocError(errornum, "Неподходящий шрифт", 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                                        else:
+                                            errornum += 1
+                                            request.session['ErrorList'].append(DocError(errornum, "Неподходящий шрифт", 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                                if spanStyle.find("font-size:") != -1:
+                                    fs = spanStyle[spanStyle.find(':') + 1:]
+                                    fs = fs[:fs.find('.')]
+                                    if float(fs) != float(request.session['FontSize']):
+                                        if errornum != 0:
+                                            lastError = request.session['ErrorList'][errornum-1]
+                                            if lastError['errorType'] != "Неподходящий размер шрифта" and  lastError['errorDisc'] != 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".' and lastError['chapter'] != chapters[currentChapter][0].text and lastError['text'] != tag.text:
+                                                errornum += 1
+                                                request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер шрифта", 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                                        else:
+                                            errornum += 1
+                                            request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер шрифта", 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".', chapters[currentChapter][0].text, tag.text).serialize())
 
-                if "style" in tag.attrs:
+                if "style" in tag.attrs and not isHeader:
                     parAtr = tag.attrs["style"]
                     parStyles = re.split(";|,", parAtr.replace('\n', ""))
 
-                    for parStyle in parStyles:
-                        if parStyle.find('margin-top:') != -1:
-                            mt = parStyle[parStyle.find(':') + 1:]
-                            mt = mt[:mt.find('.')]
-                            if float(mt) != request.session['LineSpace'] and float(mt) != 0:
-                                errornum += 1
-                                request.session['ErrorList'].append(DocError(errornum, "Неподходящий межстрочный интервал", 'Межстрочный интервал должен быть равен "' + str(request.session['LineSpace']) + '". У вас межстрочный интервал равен "' + str(mt) + '".', chapters[currentChapter][0].text, tag.text).serialize())
-                            # print("mt:" + mt)
+                    hasParentTd = False
+                    try:
+                        if tag.parent.name == "td":
+                            hasParentTd = True
+                    except:
+                        pass
+                    
+                    if not hasParentTd:
+                        for parStyle in parStyles:
+                            if parStyle.find('margin-top:') != -1:
+                                mt = parStyle[parStyle.find(':') + 1:]
+                                mt = mt[:mt.find('.')]
+                                if float(mt) != request.session['LineSpace'] and float(mt) != 0:
+                                    errornum += 1
+                                    request.session['ErrorList'].append(DocError(errornum, "Неподходящий межстрочный интервал", 'Межстрочный интервал должен быть равен "' + str(request.session['LineSpace']) + '". У вас межстрочный интервал равен "' + str(mt) + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                                # print("mt:" + mt)
 
-                        if parStyle.find('text-align:') != -1:
-                            ta = parStyle[parStyle.find(':') + 1:]
-                            if ta != request.session['TextAlign']:
-                                textAl = ""
-                                textAlTrue = ""
-                                if ta == "justify":
-                                    textAl = "по ширине"
-                                elif ta == "center":
-                                    textAl = "по центру"
-                                elif ta == "left":
-                                    textAl = "по левой стороне"
-                                elif ta == "right":
-                                    textAl = "по правой стороне"
-                                else:
-                                    textAl = "неизвестным образом"
-                                if request.session['TextAlign'] == "justify":
-                                    textAlTrue = "по ширине"
-                                elif request.session['TextAlign'] == "center":
-                                    textAlTrue = "по центру"
-                                elif request.session['TextAlign'] == "left":
-                                    textAlTrue = "по левой стороне"
-                                elif request.session['TextAlign'] == "right":
-                                    textAlTrue = "по правой стороне"
-                                else:
-                                    textAlTrue == "неизвестным образом"
-                                errornum += 1
-                                request.session['ErrorList'].append(DocError(errornum, "Неподходящее выравнивание текста", 'Выравнивание текста должно быть выставлено ' + textAlTrue + '. У вас оно выставлено ' + textAl + '.', chapters[currentChapter][0].text, tag.text).serialize())
-                            # print("ta:" + ta)
-                            
-                        if parStyle.find('text-indent:') != -1:
-                            ti = parStyle[parStyle.find(':') + 1:]
-                            if ti.find('.') != -1:
-                                ti = ti[:ti.find('.')]
-                            if ti.find('cm') != -1:
-                                ti = ti[:ti.find('cm')]
-                            if float(ti) != request.session['ParIndent'] and float(ti) != 0 and float(ti) != -18:
-                                errornum += 1
-                                request.session['ErrorList'].append(DocError(errornum, "Неподходящий абзацный отступ", 'Абзацный отступ должен быть равен "' + str(request.session['ParIndent']) + '". У вас абзацный отступ равен "' + str(ti) + '".', chapters[currentChapter][0].text, tag.text).serialize())
-                            # print("ti:" + ti)
+                            if parStyle.find('text-align:') != -1 and currentChapter > 0:
+                                ta = parStyle[parStyle.find(':') + 1:]
+                                if ta != request.session['TextAlign']:
+                                    textAl = ""
+                                    textAlTrue = ""
+                                    if ta == "justify":
+                                        textAl = "по ширине"
+                                    elif ta == "center":
+                                        textAl = "по центру"
+                                    elif ta == "left":
+                                        textAl = "по левой стороне"
+                                    elif ta == "right":
+                                        textAl = "по правой стороне"
+                                    else:
+                                        textAl = "неизвестным образом"
+                                    if request.session['TextAlign'] == "justify":
+                                        textAlTrue = "по ширине"
+                                    elif request.session['TextAlign'] == "center":
+                                        textAlTrue = "по центру"
+                                    elif request.session['TextAlign'] == "left":
+                                        textAlTrue = "по левой стороне"
+                                    elif request.session['TextAlign'] == "right":
+                                        textAlTrue = "по правой стороне"
+                                    else:
+                                        textAlTrue == "неизвестным образом"
+                                    errornum += 1
+                                    request.session['ErrorList'].append(DocError(errornum, "Неподходящее выравнивание текста", 'Выравнивание текста должно быть выставлено ' + textAlTrue + '. У вас оно выставлено ' + textAl + '.', chapters[currentChapter][0].text, tag.text).serialize())
+                                # print("ta:" + ta)
+                                
+                            if parStyle.find('text-indent:') != -1:
+                                ti = parStyle[parStyle.find(':') + 1:]
+                                if ti.find('.') != -1:
+                                    ti = ti[:ti.find('.')]
+                                if ti.find('cm') != -1:
+                                    ti = ti[:ti.find('cm')]
+                                if float(ti) != request.session['ParIndent'] and float(ti) > 0:
+                                    errornum += 1
+                                    request.session['ErrorList'].append(DocError(errornum, "Неподходящий абзацный отступ", 'Абзацный отступ должен быть равен "' + str(request.session['ParIndent']) + '". У вас абзацный отступ равен "' + str(ti) + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                                # print("ti:" + ti)
         #print(len(chapters))
         for ch in chapters:
-            #print(ch[2])
-            #print("---------------------------------------------------------------------------")
+            print(ch[0].text)
+            print("---------------------------------------------------------------------------")
             pass
     #print(doc_path + '\n' + html_path + '\n' + doc_type + '\n' + wct_path)
 

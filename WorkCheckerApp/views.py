@@ -1,3 +1,4 @@
+import bs4
 from django.shortcuts import render, redirect, HttpResponse
 from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse
@@ -6,7 +7,7 @@ import os.path
 import lxml
 import zipfile
 import re
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, element
 
 class DocError():
     number = 0
@@ -30,7 +31,7 @@ class DocError():
 
 def parse(request, doc_path, html_path, doc_type, wct_path):
     errornum = 0
-    if doc_type == 1:
+    if doc_type == "2":
         with open(wct_path, "r") as f:
             f.readline()
             request.session['FontSize'] = float(f.readline())
@@ -63,6 +64,43 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
         chapters[0][0].string = "[Начало документа]"
         currentChapter = 0
 
+        styles = str(soup.find_all("style")[0])
+        styleMsoNormalStart = styles.find("p.MsoNormal")
+        endCh = styleMsoNormalStart
+        styleMsoNormal = ""
+        df = ""
+        ds = ""
+        da = ""
+        if styleMsoNormalStart >= 0:
+            while styles[endCh] != '}':
+                if styles[endCh] == '{':
+                    styleMsoNormalStart = endCh
+                endCh += 1
+            styleMsoNormal = styles[styleMsoNormalStart+1 : endCh]
+        if styleMsoNormal != "":
+            styleAttrs = re.split(";|,", styleMsoNormal.replace('\n', "").replace('\t', ""))
+            for attr in styleAttrs:
+                if attr[:11] == "font-family":
+                    df = attr[12:]
+                    df = df.replace('"', "")
+                    #print(df)
+                if attr[:9] == "font-size":
+                    ds = attr[10:]
+                    if ds.find('cm') != -1:
+                        ds = ds[:ds.find('cm')]
+                    if ds.find('in') != -1:
+                        ds = ds[:ds.find('in')]
+                    if ds.find('pt') != -1:
+                        ds = ds[:ds.find('pt')]
+                    #print(ds)
+                if attr[:10] == "text-align":
+                    da = attr[11:]
+                    da = da.replace('"', "")
+                    #print(da)
+            #print(styleAttrs)
+
+        #print(styleMsoNormal)
+
         for tag in tags:
             isHeader = False
             if tag.name in ["h1", "h2", "h3"] and re.search('\S', tag.text) != None:
@@ -86,43 +124,91 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                                 chapters[currentChapter].append(tag)
                                 isHeader = True
                 if 'class' in tag.attrs and str(tag.attrs['class'][0]) in ["MsoNoSpacing", "MsoTocHeading"]:
-                    print("gotcha")
+                    #print("gotcha")
                     chapters.append([])
                     currentChapter += 1
                     chapters[currentChapter].append(tag)
                     isHeader = True
                 spanChild = None
-                for child in tag.children:
-                    if child.name == "span" and re.search('\S', child.text) != None:
+                try:
+                    if len(list(list(tag.children)[0].children)) > 0:
+                        #print(list(list(tag.children)[0].children))
+                        pass
+                except:
+                    pass
+                if (str(tag).find("<![if !supportLists]>")):
+                    print(str(tag))
+                tagSoup = BeautifulSoup(str(tag).replace('●', "").replace('○', "") , "lxml")
+                spanTag = tagSoup.find_all("span")
+                print(len(list(spanTag)))
+                for child in spanTag:
+                    if child.name == "span" and re.search('\S', child.text.replace("<o:p></o:p>", "")) != None:
                         spanChild = child
                         if "style" in spanChild.attrs:
+                            #print(child.text + "---------------------")
                             spanAtr = spanChild.attrs["style"]
                             spanStyles = re.split(";|,", spanAtr.replace('\n', ""))
+                            isfontNameF = False
+                            isfontSizeF = False
                             for spanStyle in spanStyles:
-                                if spanStyle.find("font-family:") != -1:
-                                    ff = spanStyle[spanStyle.find(':') + 1:]
+                                #if spanStyle.find("font-family:") != -1:
+                                    #ff = spanStyle[spanStyle.find(':') + 1:]
+                                if spanStyle[:11] == "font-family":
+                                    ff = spanStyle[12:]
                                     ff = ff.replace('\"', "")
-                                    if ff != request.session['FontName'] and ff != "Symbol" and ff != "Wingdings":
+                                    isfontNameF = True
+                                    #print(ff + " ++++++ " + request.session['FontName'])
+                                    if ff != request.session['FontName'] and ff not in ["Symbol", "Wingdings", "Cambria Math"]:
                                         if errornum != 0:
                                             lastError = request.session['ErrorList'][errornum-1]
-                                            if lastError['errorType'] != "Неподходящий шрифт" and  lastError['errorDisc'] != 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".' and lastError['chapter'] != chapters[currentChapter][0].text and lastError['text'] != tag.text:
+                                            if not (lastError['errorType'] == "Неподходящий шрифт" and  lastError['errorDisc'] == 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".' and lastError['chapter'] == chapters[currentChapter][0].text and lastError['text'] == tag.text):
                                                 errornum += 1
                                                 request.session['ErrorList'].append(DocError(errornum, "Неподходящий шрифт", 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".', chapters[currentChapter][0].text, tag.text).serialize())
                                         else:
                                             errornum += 1
                                             request.session['ErrorList'].append(DocError(errornum, "Неподходящий шрифт", 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + ff + '".', chapters[currentChapter][0].text, tag.text).serialize())
-                                if spanStyle.find("font-size:") != -1:
-                                    fs = spanStyle[spanStyle.find(':') + 1:]
-                                    fs = fs[:fs.find('.')]
+                                #if spanStyle.find("font-size:") != -1:
+                                    #fs = spanStyle[spanStyle.find(':') + 1:]
+                                if spanStyle[:9] == "font-size":
+                                    fs = spanStyle[10:]
+                                    #fs = fs[:fs.find('.')]
+                                    if fs.find('cm') != -1:
+                                        fs = fs[:fs.find('cm')]
+                                    if fs.find('in') != -1:
+                                        fs = fs[:fs.find('in')]
+                                    if fs.find('pt') != -1:
+                                        fs = fs[:fs.find('pt')]
+                                    isfontSizeF = True
+                                    #print(str(float(fs)) + " ====== " + str(float(request.session['FontSize'])))
                                     if float(fs) != float(request.session['FontSize']):
                                         if errornum != 0:
                                             lastError = request.session['ErrorList'][errornum-1]
-                                            if lastError['errorType'] != "Неподходящий размер шрифта" and  lastError['errorDisc'] != 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".' and lastError['chapter'] != chapters[currentChapter][0].text and lastError['text'] != tag.text:
+                                            if not (lastError['errorType'] == "Неподходящий размер шрифта" and  lastError['errorDisc'] == 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".' and lastError['chapter'] == chapters[currentChapter][0].text and lastError['text'] == tag.text):
                                                 errornum += 1
                                                 request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер шрифта", 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".', chapters[currentChapter][0].text, tag.text).serialize())
                                         else:
                                             errornum += 1
                                             request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер шрифта", 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(fs) + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                            if not isfontNameF:
+                                if df != request.session['FontName']:
+                                    if errornum != 0:
+                                        lastError = request.session['ErrorList'][errornum-1]
+                                        if not (lastError['errorType'] == "Неподходящий шрифт" and  lastError['errorDisc'] == 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + df + '".' and lastError['chapter'] == chapters[currentChapter][0].text and lastError['text'] == tag.text):
+                                            errornum += 1
+                                            request.session['ErrorList'].append(DocError(errornum, "Неподходящий шрифт", 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + df + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                                    else:
+                                        errornum += 1
+                                        request.session['ErrorList'].append(DocError(errornum, "Неподходящий шрифт", 'Должен быть шрифт "' + request.session['FontName'] + '". У вас стоит шрифт "' + df + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                            if not isfontSizeF:
+                                if float(ds) != float(request.session['FontSize']):
+                                    if errornum != 0:
+                                        lastError = request.session['ErrorList'][errornum-1]
+                                        if not (lastError['errorType'] == "Неподходящий размер шрифта" and  lastError['errorDisc'] == 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(ds) + '".' and lastError['chapter'] == chapters[currentChapter][0].text and lastError['text'] == tag.text):
+                                            errornum += 1
+                                            request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер шрифта", 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(ds) + '".', chapters[currentChapter][0].text, tag.text).serialize())
+                                    else:
+                                        errornum += 1
+                                        request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер шрифта", 'Размер шрифта должен быть равен "' + str(request.session['FontSize']) + '". У вас размер шрифта равен "' + str(ds) + '".', chapters[currentChapter][0].text, tag.text).serialize())
 
                 if "style" in tag.attrs and not isHeader:
                     parAtr = tag.attrs["style"]
@@ -137,13 +223,13 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                     
                     if not hasParentTd:
                         for parStyle in parStyles:
-                            if parStyle.find('margin-top:') != -1:
+                            '''if parStyle.find('margin-top:') != -1:
                                 mt = parStyle[parStyle.find(':') + 1:]
                                 mt = mt[:mt.find('.')]
                                 if float(mt) != request.session['LineSpace'] and float(mt) != 0:
                                     errornum += 1
                                     request.session['ErrorList'].append(DocError(errornum, "Неподходящий межстрочный интервал", 'Межстрочный интервал должен быть равен "' + str(request.session['LineSpace']) + '". У вас межстрочный интервал равен "' + str(mt) + '".', chapters[currentChapter][0].text, tag.text).serialize())
-                                # print("mt:" + mt)
+                                # print("mt:" + mt)'''
 
                             if parStyle.find('text-align:') != -1 and currentChapter > 0:
                                 ta = parStyle[parStyle.find(':') + 1:]
@@ -173,8 +259,33 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                                     errornum += 1
                                     request.session['ErrorList'].append(DocError(errornum, "Неподходящее выравнивание текста", 'Выравнивание текста должно быть выставлено ' + textAlTrue + '. У вас оно выставлено ' + textAl + '.', chapters[currentChapter][0].text, tag.text).serialize())
                                 # print("ta:" + ta)
+                            elif da != request.session['TextAlign']:
+                                textAl = ""
+                                textAlTrue = ""
+                                if da == "justify":
+                                    textAl = "по ширине"
+                                elif da == "center":
+                                    textAl = "по центру"
+                                elif da == "left":
+                                    textAl = "по левой стороне"
+                                elif da == "right":
+                                    textAl = "по правой стороне"
+                                else:
+                                    textAl = "неизвестным образом"
+                                if request.session['TextAlign'] == "justify":
+                                    textAlTrue = "по ширине"
+                                elif request.session['TextAlign'] == "center":
+                                    textAlTrue = "по центру"
+                                elif request.session['TextAlign'] == "left":
+                                    textAlTrue = "по левой стороне"
+                                elif request.session['TextAlign'] == "right":
+                                    textAlTrue = "по правой стороне"
+                                else:
+                                    textAlTrue == "неизвестным образом"
+                                errornum += 1
+                                request.session['ErrorList'].append(DocError(errornum, "Неподходящее выравнивание текста", 'Выравнивание текста должно быть выставлено ' + textAlTrue + '. У вас оно выставлено ' + textAl + '.', chapters[currentChapter][0].text, tag.text).serialize())
                                 
-                            if parStyle.find('text-indent:') != -1:
+                            '''if parStyle.find('text-indent:') != -1:
                                 ti = parStyle[parStyle.find(':') + 1:]
                                 if ti.find('.') != -1:
                                     ti = ti[:ti.find('.')]
@@ -183,11 +294,11 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                                 if float(ti) != request.session['ParIndent'] and float(ti) > 0:
                                     errornum += 1
                                     request.session['ErrorList'].append(DocError(errornum, "Неподходящий абзацный отступ", 'Абзацный отступ должен быть равен "' + str(request.session['ParIndent']) + '". У вас абзацный отступ равен "' + str(ti) + '".', chapters[currentChapter][0].text, tag.text).serialize())
-                                # print("ti:" + ti)
+                                # print("ti:" + ti)'''
         #print(len(chapters))
         for ch in chapters:
-            print(ch[0].text)
-            print("---------------------------------------------------------------------------")
+            #print(ch[0].text)
+            #print("---------------------------------------------------------------------------")
             pass
     #print(doc_path + '\n' + html_path + '\n' + doc_type + '\n' + wct_path)
 
@@ -286,8 +397,6 @@ def constructor(request):
         request.session['Struct2'] = True
     if 'Struct3' not in request.session:
         request.session['Struct3'] = True
-    '''if 'Struct4' not in request.session:
-        request.session['Struct4'] = True'''
     if 'Struct5' not in request.session:
         request.session['Struct5'] = True
     if 'Struct6' not in request.session:
@@ -300,30 +409,6 @@ def constructor(request):
         request.session['Struct9'] = False
     if 'Struct10' not in request.session:
         request.session['Struct10'] = False
-    '''if 'Lit1' not in request.session:
-        request.session['Lit1'] = True
-    if 'Lit2' not in request.session:
-        request.session['Lit2'] = True
-    if 'Lit3' not in request.session:
-        request.session['Lit3'] = True
-    if 'Lit4' not in request.session:
-        request.session['Lit4'] = True
-    if 'Lit5' not in request.session:
-        request.session['Lit5'] = False
-    if 'Lit6' not in request.session:
-        request.session['Lit6'] = False
-    if 'Lit7' not in request.session:
-        request.session['Lit7'] = False
-    if 'ALit1' not in request.session:
-        request.session['ALit1'] = False
-    if 'ALit2' not in request.session:
-        request.session['ALit2'] = True
-    if 'ALit3' not in request.session:
-        request.session['ALit3'] = False
-    if 'ALit4' not in request.session:
-        request.session['ALit4'] = True
-    if 'ALit5' not in request.session:
-        request.session['ALit5'] = False'''
 
     if request.method == 'POST':
         request.session['TemplateName'] = request.POST['TemplateName']
@@ -348,10 +433,6 @@ def constructor(request):
             request.session['Struct3'] = True
         else:
             request.session['Struct3'] = False
-        '''if 'Struct4' in request.POST:
-            request.session['Struct4'] = True
-        else:
-            request.session['Struct4'] = False'''
         if 'Struct5' in request.POST:
             request.session['Struct5'] = True
         else:
@@ -376,54 +457,6 @@ def constructor(request):
             request.session['Struct10'] = True
         else:
             request.session['Struct10'] = False
-        '''if 'Lit1' in request.POST:
-            request.session['Lit1'] = True
-        else:
-            request.session['Lit1'] = False
-        if 'Lit2' in request.POST:
-            request.session['Lit2'] = True
-        else:
-            request.session['Lit2'] = False
-        if 'Lit3' in request.POST:
-            request.session['Lit3'] = True
-        else:
-            request.session['Lit3'] = False
-        if 'Lit4' in request.POST:
-            request.session['Lit4'] = True
-        else:
-            request.session['Lit4'] = False
-        if 'Lit5' in request.POST:
-            request.session['Lit5'] = True
-        else:
-            request.session['Lit5'] = False
-        if 'Lit6' in request.POST:
-            request.session['Lit6'] = True
-        else:
-            request.session['Lit6'] = False
-        if 'Lit7' in request.POST:
-            request.session['Lit7'] = True
-        else:
-            request.session['Lit7'] = False
-        if 'ALit1' in request.POST:
-            request.session['ALit1'] = True
-        else:
-            request.session['ALit1'] = False
-        if 'ALit2' in request.POST:
-            request.session['ALit2'] = True
-        else:
-            request.session['ALit2'] = False
-        if 'ALit3' in request.POST:
-            request.session['ALit3'] = True
-        else:
-            request.session['ALit3'] = False
-        if 'ALit4' in request.POST:
-            request.session['ALit4'] = True
-        else:
-            request.session['ALit4'] = False
-        if 'ALit5' in request.POST:
-            request.session['ALit5'] = True
-        else:
-            request.session['ALit5'] = False'''
 
         WCTFile = open(os.getcwd()+'\\WCT\\'+request.session['TemplateName']+'.wct', 'w')
         WCTFile.write(request.session['TemplateName']+'\n')

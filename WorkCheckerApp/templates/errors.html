@@ -24,7 +24,57 @@
 
         <div class="container">
             <div class="text-center mt-5">
-
+				
+				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
+                    
+                <h1>Используемый шаблон проверки</h1>
+				
+				</br>
+				
+				<table class="table table-hover table-bordered">
+					<thead>
+						<tr class="">
+							<th scope="col"><b>Название шаблона</b></th>
+							<th scope="col">{{ TemplateName }}</th>
+						</tr>
+						
+						<tr class="">
+							<th scope="col"><b>Шрифт</b></th>
+							<th scope="col">{{ FontName }}</th>
+						</tr>
+						
+						<tr class="">
+							<th scope="col"><b>Размер шрифта</b></th>
+							<th scope="col">{{ FontSize }}</th>
+						</tr>
+						
+						<tr class="">
+							<th scope="col"><b>Выравнивание текста</b></th>
+							<th scope="col">{{ TextAlign }}</th>
+						</tr>
+						
+						<tr class="">
+							<th scope="col"><b>Размеры полей страницы</b></th>
+							<th scope="col"><span style="font-size:24px">⍇</span>{{ FLeft }}см   <span style="font-size:24px">⍈</span>{{ FRight }}см   <span style="font-size:24px">⍐</span>{{ FUp }}см   <span style="font-size:24px">⍗</span>{{ FDown }}см</th>
+						</tr>
+					</thead>
+				</table>	
+				
+				
+				
+				<h3>Необходимые главы</h3>
+				
+				<table class="table table-hover table-bordered">
+					<thead>
+						{% for chapt in Chapters %}
+						<tr class="">
+							<th scope="col">{{ chapt }}</th>
+						</tr>
+						{% endfor %}
+					</thead>
+				</table>
+				</div>
+				
 				<div class="col-sm border border-2 border-secondary rounded-3 p-3 m-3">
                     
                 <h1>Найденные ошибки</h1>

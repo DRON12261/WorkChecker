@@ -1,13 +1,11 @@
-import bs4
-from django.shortcuts import render, redirect, HttpResponse
+from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse
-from .models import ErrorDoc
 import os.path
-import lxml
+import xml.dom.minidom
 import zipfile
 import re
-from bs4 import BeautifulSoup, element
+from bs4 import BeautifulSoup
 
 class DocError():
     number = 0
@@ -31,29 +29,71 @@ class DocError():
 
 def parse(request, doc_path, html_path, doc_type, wct_path):
     errornum = 0
+    chaptersStr = []
+    chaptersHave = []
     if doc_type == "2":
         with open(wct_path, "r") as f:
-            f.readline()
+            request.session['TemplateName'] = f.readline().replace('\n', "")
             request.session['FontSize'] = float(f.readline())
-            request.session['FontName'] = f.readline()
-            request.session['ParIndent'] = float(f.readline())
-            request.session['TextAlign'] = f.readline()
+            request.session['FontName'] = f.readline().replace('\n', "")
+            request.session['TextAlign'] = f.readline().replace('\n', "")
             request.session['FLeft'] = float(f.readline())
             request.session['FRight'] = float(f.readline())
             request.session['FUp'] = float(f.readline())
             request.session['FDown'] = float(f.readline())
-            request.session['LineSpace'] = float(f.readline())
+            request.session['Structs'] = f.readline()
             f.close()
     else:
+        request.session['TemplateName'] = "Отчет по курсовой работе"
         request.session['FontSize'] = 14
         request.session['FontName'] = 'Times New Roman'
-        request.session['ParIndent'] = 36
         request.session['TextAlign'] = 'justify'
-        request.session['FLeft'] = 10
-        request.session['FRight'] = 10
-        request.session['FUp'] = 10
-        request.session['FDown'] = 10
-        request.session['LineSpace'] = 12
+        request.session['FLeft'] = 3
+        request.session['FRight'] = 1
+        request.session['FUp'] = 2
+        request.session['FDown'] = 2
+        request.session['Structs'] = '11110000'
+
+    for i in range(0, 8):
+        if str(request.session['Structs'])[i] == '1':
+            if i == 0:
+                chaptersStr.append('Содержание')
+            elif i == 1:
+                chaptersStr.append('Введение')
+            elif i == 2:
+                chaptersStr.append('Заключение')
+            elif i == 3:
+                chaptersStr.append('Список литературы')
+            elif i == 4:
+                chaptersStr.append('Словарь сокращений')
+            elif i == 5:
+                chaptersStr.append('Словарь терминов')
+            elif i == 6:
+                chaptersStr.append('Список иллюстрированного материала')
+            elif i == 7:
+                chaptersStr.append('Приложения')
+
+    z = zipfile.ZipFile(doc_path, 'r')
+    z.extract('word/document.xml', 'TempDoc/')
+    dom = xml.dom.minidom.parse('TempDoc/word/document.xml')
+    dom.normalize()
+    par = dom.getElementsByTagName("w:pgMar")[0]
+    print("name = " + par.nodeName)
+    for (name, value) in par.attributes.items():
+        twipsInSM = 567.0
+        print(name + " = " + value)
+        if name == "w:top" and round(float(value)/twipsInSM, 1) != request.session['FUp']:
+            errornum += 1
+            request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер верхнего поля страницы", 'Верхнее поле должно равняться ' + str(request.session['FUp']) + ' см. У вас верхнее поле равняется ' + str(round(float(value)/twipsInSM, 1)) + ' см.', '', '').serialize())
+        if name == "w:bottom" and round(float(value)/twipsInSM, 1) != request.session['FDown']:
+            errornum += 1
+            request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер нижнего поля страницы", 'Нижнее поле должно равняться ' + str(request.session['FDown']) + ' см. У вас нижнее поле равняется ' + str(round(float(value)/twipsInSM, 1)) + ' см.', '', '').serialize())
+        if name == "w:left" and round(float(value)/twipsInSM, 1) != request.session['FLeft']:
+            errornum += 1
+            request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер левого поля страницы", 'Левое поле должно равняться ' + str(request.session['FLeft']) + ' см. У вас левое поле равняется ' + str(round(float(value)/twipsInSM, 1)) + ' см.', '', '').serialize())
+        if name == "w:right" and round(float(value)/twipsInSM, 1) != request.session['FRight']:
+            errornum += 1
+            request.session['ErrorList'].append(DocError(errornum, "Неподходящий размер правого поля страницы", 'Правое поле должно равняться ' + str(request.session['FRight']) + ' см. У вас правое поле равняется ' + str(round(float(value)/twipsInSM, 1)) + ' см.', '', '').serialize())
 
     with open(html_path, "r") as f:
         contents = f.read()
@@ -136,11 +176,11 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                         pass
                 except:
                     pass
-                if (str(tag).find("<![if !supportLists]>")):
-                    print(str(tag))
+                #if (str(tag).find("<![if !supportLists]>")):
+                    #print(str(tag))
                 tagSoup = BeautifulSoup(str(tag).replace('●', "").replace('○', "") , "lxml")
                 spanTag = tagSoup.find_all("span")
-                print(len(list(spanTag)))
+                #print(len(list(spanTag)))
                 for child in spanTag:
                     if child.name == "span" and re.search('\S', child.text.replace("<o:p></o:p>", "")) != None:
                         spanChild = child
@@ -231,7 +271,7 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                                     request.session['ErrorList'].append(DocError(errornum, "Неподходящий межстрочный интервал", 'Межстрочный интервал должен быть равен "' + str(request.session['LineSpace']) + '". У вас межстрочный интервал равен "' + str(mt) + '".', chapters[currentChapter][0].text, tag.text).serialize())
                                 # print("mt:" + mt)'''
 
-                            if parStyle.find('text-align:') != -1 and currentChapter > 0:
+                            if parStyle.find('text-align:') != -1 and currentChapter > 0 and re.search('^(.+) (\d+).', tag.text) == None:
                                 ta = parStyle[parStyle.find(':') + 1:]
                                 if ta != request.session['TextAlign']:
                                     textAl = ""
@@ -295,11 +335,38 @@ def parse(request, doc_path, html_path, doc_type, wct_path):
                                     errornum += 1
                                     request.session['ErrorList'].append(DocError(errornum, "Неподходящий абзацный отступ", 'Абзацный отступ должен быть равен "' + str(request.session['ParIndent']) + '". У вас абзацный отступ равен "' + str(ti) + '".', chapters[currentChapter][0].text, tag.text).serialize())
                                 # print("ti:" + ti)'''
+        
+            if isHeader:
+                #print(tag.text + "--------------" + str(len(tag.text)))
+                if tag.text[len(tag.text) - 1] == '.':
+                        if errornum != 0:
+                            lastError = request.session['ErrorList'][errornum-1]
+                            if not (lastError['errorType'] == "Точка в конце названия главы" and  lastError['errorDisc'] == 'В конце названия главы не должно быть точки' and lastError['chapter'] == chapters[currentChapter][0].text and lastError['text'] == tag.text):
+                                errornum += 1
+                                request.session['ErrorList'].append(DocError(errornum, "Точка в конце названия главы", 'В конце названия главы не должно быть точки', chapters[currentChapter][0].text, tag.text).serialize())
+                        else:
+                            errornum += 1
+                            request.session['ErrorList'].append(DocError(errornum, "Точка в конце названия главы", 'В конце названия главы не должно быть точки', chapters[currentChapter][0].text, tag.text).serialize())
+        
         #print(len(chapters))
         for ch in chapters:
             #print(ch[0].text)
             #print("---------------------------------------------------------------------------")
-            pass
+            if ch[0].text[len(ch[0].text) - 1] == '.':
+                chaptersHave.append(ch[0].text[:-1])
+            else:
+                chaptersHave.append(ch[0].text)
+        for ch in chaptersStr:
+            if not ((ch == 'Содержание' and ('Оглавление' in chaptersHave or 'Содержание' in chaptersHave)) or ch in chaptersHave):
+                if errornum != 0:
+                    lastError = request.session['ErrorList'][errornum-1]
+                    if not (lastError['errorType'] == "Отсутствует необходимая глава" and  lastError['errorDisc'] == 'У вас нет необходимой главы "'+ch+'"' and lastError['chapter'] == '' and lastError['text'] == ''):
+                        errornum += 1
+                        request.session['ErrorList'].append(DocError(errornum, "Отсутствует необходимая глава", 'У вас нет необходимой главы "'+ch+'"', '', '').serialize())
+                else:
+                    errornum += 1
+                    request.session['ErrorList'].append(DocError(errornum, "Отсутствует необходимая глава", 'У вас нет необходимой главы "'+ch+'"', '', '').serialize())
+    
     #print(doc_path + '\n' + html_path + '\n' + doc_type + '\n' + wct_path)
 
 def checker(request):
@@ -377,8 +444,6 @@ def constructor(request):
         request.session['FontSize'] = 12
     if 'FontName' not in request.session:
         request.session['FontName'] = 'Times New Roman'
-    if 'ParIndent' not in request.session:
-        request.session['ParIndent'] = 10
     if 'TextAlign' not in request.session:
         request.session['TextAlign'] = 10
     if 'FLeft' not in request.session:
@@ -389,10 +454,6 @@ def constructor(request):
         request.session['FUp'] = 10
     if 'FDown' not in request.session:
         request.session['FDown'] = 10
-    if 'LineSpace' not in request.session:
-        request.session['LineSpace'] = 10
-    if 'Struct1' not in request.session:
-        request.session['Struct1'] = True
     if 'Struct2' not in request.session:
         request.session['Struct2'] = True
     if 'Struct3' not in request.session:
@@ -414,17 +475,11 @@ def constructor(request):
         request.session['TemplateName'] = request.POST['TemplateName']
         request.session['FontSize'] = request.POST['FontSize']
         request.session['FontName'] = request.POST['FontName']
-        request.session['ParIndent'] = request.POST['ParIndent']
         request.session['TextAlign'] = request.POST['TextAlign']
         request.session['FLeft'] = request.POST['FLeft']
         request.session['FRight'] = request.POST['FRight']
         request.session['FUp'] = request.POST['FUp']
         request.session['FDown'] = request.POST['FDown']
-        request.session['LineSpace'] = request.POST['LineSpace']
-        if 'Struct1' in request.POST:
-            request.session['Struct1'] = True
-        else:
-            request.session['Struct1'] = False
         if 'Struct2' in request.POST:
             request.session['Struct2'] = True
         else:
@@ -462,14 +517,12 @@ def constructor(request):
         WCTFile.write(request.session['TemplateName']+'\n')
         WCTFile.write(request.session['FontSize']+'\n')
         WCTFile.write(request.session['FontName']+'\n')
-        WCTFile.write(request.session['ParIndent']+'\n')
         WCTFile.write(request.session['TextAlign']+'\n')
         WCTFile.write(request.session['FLeft']+'\n')
         WCTFile.write(request.session['FRight']+'\n')
         WCTFile.write(request.session['FUp']+'\n')
         WCTFile.write(request.session['FDown']+'\n')
-        WCTFile.write(request.session['LineSpace']+'\n')
-        WCTFile.write(str(int(request.session['Struct1']))+str(int(request.session['Struct2']))+str(int(request.session['Struct3']))+str(int(request.session['Struct5']))+str(int(request.session['Struct6']))+str(int(request.session['Struct7']))+str(int(request.session['Struct8']))+str(int(request.session['Struct9']))+str(int(request.session['Struct10']))+'\n')
+        WCTFile.write(str(int(request.session['Struct2']))+str(int(request.session['Struct3']))+str(int(request.session['Struct5']))+str(int(request.session['Struct6']))+str(int(request.session['Struct7']))+str(int(request.session['Struct8']))+str(int(request.session['Struct9']))+str(int(request.session['Struct10']))+'\n')
         '''WCTFile.write(str(int(request.session['Lit1']))+str(int(request.session['Lit2']))+str(int(request.session['Lit3']))+str(int(request.session['Lit4']))+str(int(request.session['Lit5']))+str(int(request.session['Lit6']))+str(int(request.session['Lit7']))+'\n')
         WCTFile.write(str(int(request.session['ALit1']))+str(int(request.session['ALit2']))+str(int(request.session['ALit3']))+str(int(request.session['ALit4']))+str(int(request.session['ALit5'])))'''
         WCTFile.close()
@@ -485,8 +538,60 @@ def constructor(request):
 def errors(request):
     if 'ErrorList' not in request.session:
         request.session['ErrorList'] = []
-
+       
+    if 'FontSize' not in request.session:
+        request.session['TemplateName'] = "Отчет по курсовой работе"
+        request.session['FontSize'] = 14
+        request.session['FontName'] = 'Times New Roman'
+        request.session['TextAlign'] = 'justify'
+        request.session['FLeft'] = 3
+        request.session['FRight'] = 1
+        request.session['FUp'] = 2
+        request.session['FDown'] = 2
+        request.session['Structs'] = '11110000'
+    
+    chaptersStr = []
+    for i in range(0, 8):
+        if str(request.session['Structs'])[i] == '1':
+            if i == 0:
+                chaptersStr.append('Содержание/Оглавление')
+            elif i == 1:
+                chaptersStr.append('Введение')
+            elif i == 2:
+                chaptersStr.append('Заключение')
+            elif i == 3:
+                chaptersStr.append('Список литературы')
+            elif i == 4:
+                chaptersStr.append('Словарь сокращений')
+            elif i == 5:
+                chaptersStr.append('Словарь терминов')
+            elif i == 6:
+                chaptersStr.append('Список иллюстрированного материала')
+            elif i == 7:
+                chaptersStr.append('Приложения')
+    
+    textAl = ""
+    if request.session['TextAlign'] == "justify":
+        textAl = "По ширине"
+    elif request.session['TextAlign'] == "center":
+        textAl = "По центру"
+    elif request.session['TextAlign'] == "left":
+        textAl = "По левой стороне"
+    elif request.session['TextAlign'] == "right":
+        textAl = "По правой стороне"
+    else:
+        textAl = "неизвестным образом"
+    
     context = {
+        "TemplateName": request.session['TemplateName'],
+        "FontSize": request.session['FontSize'],
+        "FontName": request.session['FontName'],
+        "TextAlign": textAl,
+        "FLeft": request.session['FLeft'],
+        "FRight": request.session['FRight'],
+        "FUp": request.session['FUp'],
+        "FDown": request.session['FDown'],
+        "Chapters": chaptersStr,
         "ErrorList": request.session['ErrorList']
     }
 

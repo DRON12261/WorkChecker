@@ -1,6 +1,7 @@
 # Разработка сервиса для проверки текстов студенческих работ на соответствие формальным требованиям
 
 ## Презентация
+[Ссылка на презентацию в Google Docs](https://docs.google.com/presentation/d/1JQ8y81yGqHMg6S2axyQim_iUqOPdvRXl8UeWDgK_3JA/edit?usp=sharing)
 
 ## Скриншоты веб-сервиса
 ![Скрин1](https://i.ibb.co/HYVf9Tw/1.png)
